@@ -24,7 +24,12 @@ const run = async () => {
   try {
     await client.connect();
 
-    
+    const eventsColl = client.db("BondhonEvents").collection("events");
+    app.post("/create-events",(req, res)=>{
+        console.log(req.body);
+        const result = eventsColl.insertOne(req.body)
+        res.send(result)
+    })
 
     await client.db("admin").command({ ping: 1 });
     console.log("You successfully connected to mongoDb!");
