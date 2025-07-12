@@ -40,7 +40,16 @@ const run = async () => {
       const result = eventsColl.insertOne(req.body);
       res.send(result);
     });
-
+    
+    app.patch("/event/:id/join", async (req, res) => {
+      const quere = { _id: new ObjectId(req.params.id) };
+      const updateDoc = {
+        $set: req.body,
+      };
+      const result = await eventsColl.updateOne(quere, updateDoc);
+      res.send(result);
+    });
+    
     await client.db("admin").command({ ping: 1 });
     console.log("You successfully connected to mongoDb!");
   } catch {
