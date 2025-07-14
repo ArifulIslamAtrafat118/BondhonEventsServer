@@ -3,11 +3,42 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
+const admin = require("firebase-admin");
+const serviceAccount = require("./bondhonevents-firebase-adminsdk-fbsvc-daa07b4084.json");
 const PORT = process.env.PORT || 3000;
 
 //middleware
 app.use(cors());
 app.use(express.json());
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+const firebaseTokenVerify = async (req, res, next) => {
+  const authHeader = req.headers?.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).send({ message: "Unauthorized Access" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    const decoded = await admin.auth().verifyIdToken(token);
+    req.decoded = decoded;
+    // console.log("Decoded:", decoded);
+    next();
+  } catch (error) {
+    console.error("Token verification failed:", error);
+    res.status(401).send({ message: "Unauthorized Access" });
+  }
+};
+const emailVerify = async (req, res, next) => {
+  if (req.query.email != req.decoded.email) {
+    res.status(403).send({ message: "Forbidden Access!" });
+    return;
+  }
+  next();
+};
 
 const uri = `mongodb+srv://${process.env.DB_USER_NAME}:${process.env.DB_USER_PASS}@cluster0.jcx7gas.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 const client = new MongoClient(uri, {
@@ -20,27 +51,24 @@ const client = new MongoClient(uri, {
 const run = async () => {
   try {
     await client.connect();
-
     const eventsColl = client.db("BondhonEvents").collection("events");
+
     app.get("/upcoming-events", async (req, res) => {
-      const result = await eventsColl.find().toArray();
+      const result = await eventsColl.find().sort({ date: 1 }).toArray();
       res.send(result);
     });
     app.get("/event-details/:id", async (req, res) => {
-      console.log(req.params.id);
       const result = await eventsColl.findOne({
         _id: new ObjectId(req.params.id),
       });
-      // console.log(result);
       res.send(result);
     });
 
     app.post("/create-events", (req, res) => {
-      console.log(req.body);
       const result = eventsColl.insertOne(req.body);
       res.send(result);
     });
-    
+
     app.patch("/event/:id/join", async (req, res) => {
       const quere = { _id: new ObjectId(req.params.id) };
       const updateDoc = {
