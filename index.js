@@ -63,6 +63,19 @@ const run = async () => {
       });
       res.send(result);
     });
+    app.get(
+      "/joined-events/:uid",
+      firebaseTokenVerify,
+      emailVerify,
+      async (req, res) => {
+        const uid = req.params.uid;
+        const result = await eventsColl
+          .find({ joined: uid })
+          .sort({ date: 1 })
+          .toArray();
+        res.send(result);
+      }
+    );
 
     app.post("/create-events", (req, res) => {
       const result = eventsColl.insertOne(req.body);
