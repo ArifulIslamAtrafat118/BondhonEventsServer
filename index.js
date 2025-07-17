@@ -77,6 +77,11 @@ const run = async () => {
       }
     );
 
+    app.get('/manage-my-events/:uid', firebaseTokenVerify, emailVerify, async(req, res)=>{
+      const result = await eventsColl.find({"author.uid" : req.params.uid}).toArray();
+      res.send(result);
+    })
+
     app.post("/create-events", (req, res) => {
       const result = eventsColl.insertOne(req.body);
       res.send(result);
@@ -90,7 +95,14 @@ const run = async () => {
       const result = await eventsColl.updateOne(quere, updateDoc);
       res.send(result);
     });
-    
+
+    app.delete("/event/delete/:id",firebaseTokenVerify, emailVerify, async (req, res) => {
+      const result = await eventsColl.deleteOne({
+        _id: new ObjectId(req.params.id),
+      });
+      res.send(result);
+    });
+
     await client.db("admin").command({ ping: 1 });
     console.log("You successfully connected to mongoDb!");
   } catch {
