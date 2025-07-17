@@ -77,15 +77,37 @@ const run = async () => {
       }
     );
 
-    app.get('/manage-my-events/:uid', firebaseTokenVerify, emailVerify, async(req, res)=>{
-      const result = await eventsColl.find({"author.uid" : req.params.uid}).toArray();
-      res.send(result);
-    })
+    app.get(
+      "/manage-my-events/:uid",
+      firebaseTokenVerify,
+      emailVerify,
+      async (req, res) => {
+        const result = await eventsColl
+          .find({ "author.uid": req.params.uid })
+          .toArray();
+        res.send(result);
+      }
+    );
 
     app.post("/create-events", (req, res) => {
       const result = eventsColl.insertOne(req.body);
       res.send(result);
     });
+
+    app.put(
+      "/update-events/:id",
+      firebaseTokenVerify,
+      emailVerify,
+      async (req, res) => {
+        const updateFields = { ...req.body };
+        delete updateFields._id;
+        const result = await eventsColl.updateOne(
+          { _id: new ObjectId(req.params.id) },
+          { $set: updateFields }
+        );
+        res.send(result);
+      }
+    );
 
     app.patch("/event/:id/join", async (req, res) => {
       const quere = { _id: new ObjectId(req.params.id) };
@@ -96,12 +118,17 @@ const run = async () => {
       res.send(result);
     });
 
-    app.delete("/event/delete/:id",firebaseTokenVerify, emailVerify, async (req, res) => {
-      const result = await eventsColl.deleteOne({
-        _id: new ObjectId(req.params.id),
-      });
-      res.send(result);
-    });
+    app.delete(
+      "/event/delete/:id",
+      firebaseTokenVerify,
+      emailVerify,
+      async (req, res) => {
+        const result = await eventsColl.deleteOne({
+          _id: new ObjectId(req.params.id),
+        });
+        res.send(result);
+      }
+    );
 
     await client.db("admin").command({ ping: 1 });
     console.log("You successfully connected to mongoDb!");
