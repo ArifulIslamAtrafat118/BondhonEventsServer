@@ -5,6 +5,8 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const admin = require("firebase-admin");
 const serviceAccount = require("./bondhonevents-firebase-adminsdk-fbsvc-daa07b4084.json");
+// const decoded = Buffer.from(process.env.FB_SERVICE_KEY, 'base64').toString('utf8');
+// const serviceAccount = JSON.parse(decoded);
 const PORT = process.env.PORT || 3000;
 
 //middleware
@@ -50,19 +52,35 @@ const client = new MongoClient(uri, {
 });
 const run = async () => {
   try {
-    await client.connect();
+    // await client.connect();
     const eventsColl = client.db("BondhonEvents").collection("events");
 
+    //public api
     app.get("/upcoming-events", async (req, res) => {
-      const result = await eventsColl.find().sort({ date: 1 }).toArray();
-      res.send(result);
+      try {
+        const events = await eventsColl.find().sort({ date: 1 }).toArray();
+
+        const today = new Date();
+        const upcoming = events.filter((event) => new Date(event.date) >= today);
+
+        res.send(upcoming);
+      } catch (error) {
+        console.error("Error fetching upcoming events:", error);
+        res.status(500).send({ error: "Internal Server Error" });
+      }
     });
-    app.get("/event-details/:id", async (req, res) => {
-      const result = await eventsColl.findOne({
-        _id: new ObjectId(req.params.id),
-      });
-      res.send(result);
-    });
+
+    app.get(
+      "/event-details/:id",
+      firebaseTokenVerify,
+      emailVerify,
+      async (req, res) => {
+        const result = await eventsColl.findOne({
+          _id: new ObjectId(req.params.id),
+        });
+        res.send(result);
+      }
+    );
     app.get(
       "/joined-events/:uid",
       firebaseTokenVerify,
@@ -89,7 +107,7 @@ const run = async () => {
       }
     );
 
-    app.post("/create-events", (req, res) => {
+    app.post("/create-events", firebaseTokenVerify, emailVerify, (req, res) => {
       const result = eventsColl.insertOne(req.body);
       res.send(result);
     });
@@ -109,14 +127,19 @@ const run = async () => {
       }
     );
 
-    app.patch("/event/:id/join", async (req, res) => {
-      const quere = { _id: new ObjectId(req.params.id) };
-      const updateDoc = {
-        $set: req.body,
-      };
-      const result = await eventsColl.updateOne(quere, updateDoc);
-      res.send(result);
-    });
+    app.patch(
+      "/event/:id/join",
+      firebaseTokenVerify,
+      emailVerify,
+      async (req, res) => {
+        const quere = { _id: new ObjectId(req.params.id) };
+        const updateDoc = {
+          $set: req.body,
+        };
+        const result = await eventsColl.updateOne(quere, updateDoc);
+        res.send(result);
+      }
+    );
 
     app.delete(
       "/event/delete/:id",
@@ -130,8 +153,8 @@ const run = async () => {
       }
     );
 
-    await client.db("admin").command({ ping: 1 });
-    console.log("You successfully connected to mongoDb!");
+    // await client.db("admin").command({ ping: 1 });
+    // console.log("You successfully connected to mongoDb!");
   } catch {
     console.dir;
   }
