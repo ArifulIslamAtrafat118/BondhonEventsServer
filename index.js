@@ -61,12 +61,35 @@ const run = async () => {
         const events = await eventsColl.find().sort({ date: 1 }).toArray();
 
         const today = new Date();
-        const upcoming = events.filter((event) => new Date(event.date) >= today);
+        const upcoming = events.filter(
+          (event) => new Date(event.date) >= today
+        );
 
         res.send(upcoming);
       } catch (error) {
         console.error("Error fetching upcoming events:", error);
         res.status(500).send({ error: "Internal Server Error" });
+      }
+    });
+
+    app.get("/search", async (req, res) => {
+      try {
+        const searchQuery = req.query.search?.toLowerCase();
+        const searchResult = await eventsColl
+          .find({
+            title: { $regex: searchQuery, $options: "i" },
+          })
+          .sort({ date: 1 })
+          .toArray();
+        const today = new Date();
+        const upcoming = searchResult.filter(
+          (event) => new Date(event.date) >= today
+        );
+
+        res.send(upcoming);
+      } catch (error) {
+        console.error("Search error:", error);
+        res.status(500).send({ message: "Internal Server Error" });
       }
     });
 
