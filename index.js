@@ -130,6 +130,12 @@ const run = async () => {
       }
     );
 
+    app.get("/total-views/:eventId",firebaseTokenVerify,emailVerify, async(req, res)=>{
+      const eventId = req.params.eventId;
+      const views = await eventsColl.findOne({_id: new ObjectId(eventId)});
+      res.send(views);
+    })
+
     app.post("/create-events", firebaseTokenVerify, emailVerify, (req, res) => {
       const result = eventsColl.insertOne(req.body);
       res.send(result);
