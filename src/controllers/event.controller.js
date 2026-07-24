@@ -90,12 +90,23 @@ const searchEvents=async(req,res)=>{
 
 
 // CREATE EVENT
+// Accepts any shape the client sends.
+// New clients send: { ...fields, thumbnail: { url, public_id }, imageUrl: url }
+// Old clients send: { ...fields, imageUrl: url }
 
-const createEvent=async(req,res)=>{
+const createEvent = async (req, res) => {
 
-    const result=await eventsColl.insertOne(req.body);
+    try {
 
-    res.send(result);
+        const result = await eventsColl.insertOne(req.body);
+
+        res.send(result);
+
+    } catch (error) {
+
+        res.status(500).send({ message: "Failed to create event." });
+
+    }
 
 }
 
@@ -187,13 +198,11 @@ const updateEvent=async(req,res)=>{
 
 // DELETE EVENT
 
-const deleteEvent=async(req,res)=>{
+const deleteEvent = async (req, res) => {
 
-
-    const result=await eventsColl.deleteOne({
-        _id:new ObjectId(req.params.id)
+    const result = await eventsColl.deleteOne({
+        _id: new ObjectId(req.params.id)
     });
-
 
     res.send(result);
 
@@ -201,7 +210,110 @@ const deleteEvent=async(req,res)=>{
 
 
 
-module.exports={
+// ADD EVENT MEDIA
+// PUT /event/update/:eventId/media
+// Body: { media: [{ url, public_id, type }] }
+// Rules: owner only, max 5 total media files
+
+const addEventMedia = async (req, res) => {
+
+    try {
+
+        const { eventId } = req.params;
+
+        // Fetch the event to verify ownership and current media count
+        const event = await eventsColl.findOne({
+            _id: new ObjectId(eventId)
+        });
+
+        if (!event) {
+            return res.status(404).json({ message: "Event not found." });
+        }
+
+        // Owner check
+        if (event.author?.uid !== req.decoded.uid) {
+            return res.status(403).json({ message: "Forbidden: not the event owner." });
+        }
+
+        const incomingMedia = req.body.media || [];
+
+        if (!Array.isArray(incomingMedia) || incomingMedia.length === 0) {
+            return res.status(400).json({ message: "No media provided." });
+        }
+
+        const existingMedia = Array.isArray(event.media) ? event.media : [];
+
+        const combined = [...existingMedia, ...incomingMedia];
+
+        if (combined.length > 5) {
+            return res.status(400).json({
+                message: `Maximum 5 media files allowed per event. Current: ${existingMedia.length}, trying to add: ${incomingMedia.length}.`
+            });
+        }
+
+        const result = await eventsColl.updateOne(
+            { _id: new ObjectId(eventId) },
+            { $set: { media: combined } }
+        );
+
+        res.send(result);
+
+    } catch (error) {
+
+        console.error("addEventMedia error:", error);
+
+        res.status(500).json({ message: "Failed to update event media." });
+
+    }
+
+}
+
+
+
+// REMOVE EVENT MEDIA ITEM
+// DELETE /event/update/:eventId/media/:publicId
+// Removes a single media item by public_id (URL-encoded)
+
+const removeEventMedia = async (req, res) => {
+
+    try {
+
+        const { eventId, publicId } = req.params;
+
+        const decodedPublicId = decodeURIComponent(publicId);
+
+        const event = await eventsColl.findOne({
+            _id: new ObjectId(eventId)
+        });
+
+        if (!event) {
+            return res.status(404).json({ message: "Event not found." });
+        }
+
+        if (event.author?.uid !== req.decoded.uid) {
+            return res.status(403).json({ message: "Forbidden: not the event owner." });
+        }
+
+        const result = await eventsColl.updateOne(
+            { _id: new ObjectId(eventId) },
+            { $pull: { media: { public_id: decodedPublicId } } }
+        );
+
+        res.send(result);
+
+    } catch (error) {
+
+        console.error("removeEventMedia error:", error);
+
+        res.status(500).json({ message: "Failed to remove media." });
+
+    }
+
+}
+
+
+
+module.exports = {
     setCollection,
     getUpcomingEvents,
     searchEvents,
@@ -210,5 +322,7 @@ module.exports={
     joinedEvents,
     manageEvents,
     updateEvent,
-    deleteEvent
+    deleteEvent,
+    addEventMedia,
+    removeEventMedia,
 }

@@ -8,8 +8,10 @@ const {
     joinedEvents,
     manageEvents,
     updateEvent,
-    deleteEvent
-}=require("../controllers/event.controller");
+    deleteEvent,
+    addEventMedia,
+    removeEventMedia,
+} = require("../controllers/event.controller");
 
 
 const {
@@ -86,6 +88,24 @@ emailVerify,
 deleteEvent
 );
 
+// PUT /event/update/:eventId/media  — add media (owner only, max 5 total)
+router.put(
+"/event/update/:eventId/media",
+firebaseTokenVerify,
+emailVerify,
+addEventMedia
+);
 
 
-module.exports=router;
+
+// DELETE /event/update/:eventId/media/:publicId  — remove one media item (owner only)
+router.delete(
+"/event/update/:eventId/media/:publicId",
+firebaseTokenVerify,
+emailVerify,
+removeEventMedia
+);
+
+
+
+module.exports = router;
