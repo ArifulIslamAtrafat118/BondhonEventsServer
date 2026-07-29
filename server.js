@@ -8,6 +8,9 @@ const connectDB=require("./src/config/db");
 const {
     setCollection
 }=require("./src/controllers/event.controller");
+const {
+    setCollection: setBlogCollection
+}=require("./src/controllers/blog.controller");
 
 
 
@@ -22,7 +25,7 @@ const startServer=async()=>{
 
 
     setCollection(db);
-
+    setBlogCollection(db);
 
 
     app.listen(PORT,()=>{
