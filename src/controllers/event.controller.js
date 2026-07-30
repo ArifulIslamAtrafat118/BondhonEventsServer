@@ -43,7 +43,26 @@ const getUpcomingEvents = async(req,res)=>{
 
 }
 
+// GET EXPIRED EVENTS
+const getExpiredEvents = async(req,res)=>{
+    try{
+        const events = await eventsColl
+            .find()
+            .sort({date:-1})
+            .toArray();
 
+        const today = new Date();
+        const expired = events.filter(
+            event => new Date(event.date) < today
+        );
+        res.send(expired);
+    }
+    catch(error){
+        res.status(500).send({
+            error:"Internal Server Error"
+        });
+    }
+}
 
 // SEARCH EVENTS
 
@@ -316,6 +335,7 @@ const removeEventMedia = async (req, res) => {
 module.exports = {
     setCollection,
     getUpcomingEvents,
+    getExpiredEvents,
     searchEvents,
     createEvent,
     getEventDetails,

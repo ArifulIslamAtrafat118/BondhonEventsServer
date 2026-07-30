@@ -11,6 +11,7 @@ const {
     deleteEvent,
     addEventMedia,
     removeEventMedia,
+    getExpiredEvents,
 } = require("../controllers/event.controller");
 
 
@@ -25,6 +26,13 @@ const {
 router.get(
 "/upcoming-events",
 getUpcomingEvents
+);
+
+
+
+router.get(
+"/events/expired",
+getExpiredEvents
 );
 
 
