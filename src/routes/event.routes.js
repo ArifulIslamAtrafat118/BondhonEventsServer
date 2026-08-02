@@ -12,6 +12,7 @@ const {
     addEventMedia,
     removeEventMedia,
     getExpiredEvents,
+    joinFreeEvent,
 } = require("../controllers/event.controller");
 
 
@@ -20,6 +21,14 @@ const {
     emailVerify
 }=require("../middlewares/auth.middleware");
 
+
+// PATCH /event/:id/join - Join free event
+router.patch(
+"/event/:id/join",
+firebaseTokenVerify,
+emailVerify,
+joinFreeEvent
+);
 
 
 

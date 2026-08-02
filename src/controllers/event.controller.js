@@ -332,6 +332,49 @@ const removeEventMedia = async (req, res) => {
 
 
 
+// JOIN FREE EVENT
+const joinFreeEvent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!ObjectId.isValid(id)) {
+      return res.status(400).send({ message: "Invalid event ID." });
+    }
+
+    const event = await eventsColl.findOne({ _id: new ObjectId(id) });
+    if (!event) {
+      return res.status(404).send({ message: "Event not found." });
+    }
+
+    if (new Date(event.date) < new Date()) {
+      return res.status(400).send({ message: "Cannot join an expired event." });
+    }
+
+    if (event.author?.uid === req.decoded.uid) {
+      return res.status(400).send({ message: "Event author cannot join their own event." });
+    }
+
+    const fee = parseFloat(event.fee);
+    if (!isNaN(fee) && fee > 0) {
+      return res.status(400).send({ message: "This event requires a payment fee to join." });
+    }
+
+    if (Array.isArray(event.joined) && event.joined.includes(req.decoded.uid)) {
+      return res.status(400).send({ message: "You have already joined this event." });
+    }
+
+    await eventsColl.updateOne(
+      { _id: new ObjectId(id) },
+      { $addToSet: { joined: req.decoded.uid } }
+    );
+
+    const updatedEvent = await eventsColl.findOne({ _id: new ObjectId(id) });
+    res.send({ success: true, message: "Successfully joined event", joined: updatedEvent.joined });
+  } catch (error) {
+    console.error("joinFreeEvent error:", error);
+    res.status(500).send({ message: "Failed to join event." });
+  }
+};
+
 module.exports = {
     setCollection,
     getUpcomingEvents,
@@ -345,4 +388,5 @@ module.exports = {
     deleteEvent,
     addEventMedia,
     removeEventMedia,
+    joinFreeEvent,
 }
