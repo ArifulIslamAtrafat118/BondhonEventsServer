@@ -1,17 +1,16 @@
 const router = require("express").Router();
 
-const { firebaseTokenVerify } = require("../middlewares/auth.middleware");
-const { upload, uploadMedia }  = require("../controllers/upload.controller");
-
+const { firebaseTokenVerify, blockStatusCheck } = require("../middlewares/auth.middleware");
+const { upload, uploadMedia } = require("../controllers/upload.controller");
 
 // POST /upload
-// Auth: Firebase token required (no email query needed – upload is generic)
+// Auth: Firebase token required + Block check
 router.post(
-    "/upload",
-    firebaseTokenVerify,
-    upload.single("file"),
-    uploadMedia
+  "/upload",
+  firebaseTokenVerify,
+  blockStatusCheck,
+  upload.single("file"),
+  uploadMedia
 );
-
 
 module.exports = router;

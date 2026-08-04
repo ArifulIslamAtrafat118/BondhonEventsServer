@@ -7,11 +7,13 @@ const {
 const {
   firebaseTokenVerify,
   emailVerify,
+  blockStatusCheck,
 } = require("../middlewares/auth.middleware");
 
 router.post(
   "/payments/create-payment-intent",
   firebaseTokenVerify,
+  blockStatusCheck,
   emailVerify,
   createPaymentIntent
 );
@@ -19,6 +21,7 @@ router.post(
 router.post(
   "/payments/confirm",
   firebaseTokenVerify,
+  blockStatusCheck,
   emailVerify,
   confirmPayment
 );

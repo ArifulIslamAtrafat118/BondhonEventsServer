@@ -1,5 +1,6 @@
 const { ObjectId } = require("mongodb");
 const stripe = require("../config/stripe");
+const { updateUserStatistics } = require("./user.controller");
 
 let eventsColl;
 let paymentsColl;
@@ -129,6 +130,12 @@ const confirmPayment = async (req, res) => {
       { _id: new ObjectId(eventId) },
       { $addToSet: { joined: req.decoded.uid } }
     );
+
+    // Update user statistics
+    await updateUserStatistics(req.decoded.uid, {
+      eventsJoined: 1,
+      donations: paymentIntent.amount / 100,
+    });
 
     res.send({
       success: true,

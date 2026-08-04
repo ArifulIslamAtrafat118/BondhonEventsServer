@@ -1,38 +1,37 @@
 require("dotenv").config();
 
-
-const app=require("./src/app");
-
-const connectDB=require("./src/config/db");
+const app = require("./src/app");
+const connectDB = require("./src/config/db");
 
 const {
-    setCollection: setEventCollection
-}=require("./src/controllers/event.controller");
+  setCollection: setEventCollection,
+} = require("./src/controllers/event.controller");
 
 const {
-    setCollection: setPaymentCollection
-}=require("./src/controllers/payment.controller");
+  setCollection: setBlogCollection,
+} = require("./src/controllers/blog.controller");
 
-const PORT=process.env.PORT || 4000;
+const {
+  setCollection: setPaymentCollection,
+} = require("./src/controllers/payment.controller");
 
-const startServer=async()=>{
-    const db=await connectDB();
+const {
+  setCollection: setUserCollection,
+} = require("./src/controllers/user.controller");
 
-    setEventCollection(db);
-    setPaymentCollection(db);
+const PORT = process.env.PORT || 4000;
 
+const startServer = async () => {
+  const db = await connectDB();
 
+  setUserCollection(db);
+  setEventCollection(db);
+  setBlogCollection(db);
+  setPaymentCollection(db);
 
-    app.listen(PORT,()=>{
-
-        console.log(
-            `Server running on PORT ${PORT}`
-        );
-
-    });
-
-}
-
-
+  app.listen(PORT, () => {
+    console.log(`Server running on PORT ${PORT}`);
+  });
+};
 
 startServer();
